@@ -1,7 +1,6 @@
 import Chain from '../models/chains'
 
 
-
 export const calibrationFilecoin: Chain = {
   id: '0x4cb2f',
   token: 'TFIL',
@@ -66,6 +65,9 @@ export const ArbitrumSepolia: Chain = {
 
   
 const chains: Chain[] = [calibrationFilecoin,ArbitrumSepolia,GnosisChain,MorphTestnet,NeonDevnet]
+
+export const chainMap = new Map([[calibrationFilecoin.id,0],[ArbitrumSepolia.id,1],[GnosisChain.id,2],[MorphTestnet.id,3],[NeonDevnet.id,4]])
+
 
 export const initialChain = calibrationFilecoin
 
