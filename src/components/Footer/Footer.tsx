@@ -15,12 +15,11 @@ export default function Footer(){
                 <div className="mb-16">
                   <div className="max-w-[300px]">
                   <div className="flex items-center mb-6">
-
+                        <img src="/images/timesharelogo2.png" ></img>
                     </div>
                     <p
-                      className="mb-6 text-base font-medium text-body-color"
-                    >
- TimeShare - Fraction Ownership              </p>
+                      className="mb-6 text-base font-medium text-body-color flex items-center"
+                    >TimeShare - Fraction Ownership</p>
     
                     <div className="flex items-center">
                       <a

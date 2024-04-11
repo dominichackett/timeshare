@@ -69,7 +69,7 @@ import Link from 'next/link';
                         </li>
                            <li className="group relative">
                           <Link
-                            href="/viewtag"
+                            href="/timeshares"
                             className="mx-8 flex py-2 text-base font-semibold text-[#bababa] group-hover:text-white lg:mr-0 lg:ml-8 lg:inline-flex lg:py-6 lg:px-0 xl:ml-12"
                           >
                            Timeshares
@@ -98,12 +98,20 @@ import Link from 'next/link';
                             </Link>
                           
                             <Link
-                              href="/applogin"
+                              href="/mytimeshares"
                               className="block rounded py-[10px] px-4 text-sm font-medium text-[#bababa] hover:text-white"
                             >
-                              App Login
+                              My Time Shares
+                            </Link>
+
+                            <Link
+                              href="/purchased"
+                              className="block rounded py-[10px] px-4 text-sm font-medium text-[#bababa] hover:text-white"
+                            >
+                              Purchased Time Shares
                             </Link>
                           </div>
+                          
                         </li>}
 
                         <li className="group relative">
