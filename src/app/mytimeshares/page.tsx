@@ -6,7 +6,7 @@ import Image from 'next/image';
 import chains from '@/chains/chains';
 import Link from 'next/link'
 import { useState } from 'react';
-export default function TimeShare() {
+export default function MyTimeShare() {
   const [timeshares,setTimeShares] = useState([{id:1,name:"Electric Bike",price:100,shares:10,status:"Available"
   ,image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[0]}
   ,{id:2,name:"Electric Bike",price:100,shares:10,status:"Available",image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[1]}
@@ -42,7 +42,12 @@ export default function TimeShare() {
       ></div>
       <div className="container">
         <div className="-mx-4 flex flex-wrap items-center">
-         
+        <Link
+                  href="/createtimeshare"
+                  className="mr-5 mb-5 inline-flex items-center justify-center rounded-md border-2 border-primary bg-primary py-3 px-7 text-base font-semibold text-white transition-all hover:bg-opacity-90"
+                >
+                  Create TimeShare
+                </Link>
         <div className="mb-12 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
                 {timeshares.map((timeshare) => (
                   <div key={timeshare.id} className=' bg-bg-color p-4 rounded-lg border border-dashed border-[#A1A0AE]'>
