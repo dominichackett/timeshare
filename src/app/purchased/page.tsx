@@ -6,13 +6,15 @@ import Image from 'next/image';
 import chains from '@/chains/chains';
 import Link from 'next/link'
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 export default function TimeShare() {
     const [timeshares,setTimeShares] = useState([{id:1,name:"Electric Bike",price:100,shares:10,status:"Available"
     ,image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[0]}
     ,{id:2,name:"Electric Bike",price:100,shares:10,status:"Available",image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[1]}
     ,{id:3,name:"Electric Bike",price:100,shares:10,status:"Available",image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[2]}
     ,{id:4,name:"Electric Bike",price:100,shares:10,status:"Available",image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[3]}])
-  return (
+    const router = useRouter()
+    return (
     <>
       <Head>
       <meta charSet="UTF-8" />
@@ -46,7 +48,7 @@ export default function TimeShare() {
         <div className="mb-12 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
                 {timeshares.map((timeshare) => (
                   <div key={timeshare.id} className=' bg-bg-color p-4 rounded-lg border border-dashed border-[#A1A0AE]'>
-                  <button  onClick={()=>viewItem(timeshare)} className="cursor-pointer group">
+                  <button  onClick={()=>router.push(`/viewtimeshare/${timeshare.id}`)} className="cursor-pointer group">
                     <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-lg sm:aspect-h-3 sm:aspect-w-2">
                       <img
                         src={timeshare.image}
@@ -86,6 +88,10 @@ export default function TimeShare() {
                     </div>
                     <div className="mt-4 flex items-center justify-between text-base font-medium text-white">
                       <h3>Available Shares</h3>
+                      <p>{timeshare.shares}</p>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between text-base font-medium text-white">
+                      <h3>Shares Owned</h3>
                       <p>{timeshare.shares}</p>
                     </div>
                     <div className="mt-4 flex items-center justify-between text-base font-medium text-white">

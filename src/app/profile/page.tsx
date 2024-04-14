@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useState,useEffect } from 'react';
 import { Country, State, City }  from 'country-state-city';
 
-export default function CreateTimeShare() {
+export default function Profile() {
  const [isSaving,setIsSaving] = useState()
  const [preview,setPreview] = useState()
  const [selectedFile, setSelectedFile] = useState()
@@ -114,7 +114,7 @@ export default function CreateTimeShare() {
                       for="eventImage"
                       className="cursor-pointer relative flex h-[480px] min-h-[200px] items-center justify-center rounded-lg border border-dashed border-[#A1A0AE] bg-[#353444] p-12 text-center"
                     >
-                     <img src={preview ? preview: '/images/default-image.jpg'}/>
+                     <img src={preview ? preview: '/images/profile.jpg'}/>
                     </label>
                   </div>
 
@@ -122,12 +122,13 @@ export default function CreateTimeShare() {
 
                   <div className="rounded-md bg-[#4E4C64] py-4 px-8">
                    
-                  <div className="pt-2">
+                  <div className="pt-2 ">
                     <button disabled={isSaving }
                       className="hover:shadow-form w-full rounded-md bg-primary py-3 px-8 text-center text-base font-semibold text-white outline-none"
                     >
-                        Save TimeShare
-                    </button>
+                        Save Profile 
+                                           </button>
+                   
                   </div>                    
                    
                   </div>
@@ -137,7 +138,7 @@ export default function CreateTimeShare() {
                 <div>
                 <div className="mb-5 pt-2">
                     <p className="text-xl font-bold text-white">
-                      TimeShare Details
+                      Profile Details
                     </p>
                   </div>
                   <div className="mb-5">
@@ -157,49 +158,11 @@ export default function CreateTimeShare() {
                           className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
                         />
                       </div>                  <div className="-mx-3 flex flex-wrap">
-                    <div className="w-full px-3 md:w-1/2">
-                      <div className="mb-5">
-                        <label
-                          for="shares"
-                          className="mb-2 block text-base font-medium text-white"
-                        >
-                          No. Shares
-                        </label>
+                   
 
-                        <select 
-        id="shares"
-        className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
-      >
-        {[...Array(51)].map((_, index) => (
-          <option key={index + 2} value={index + 2}>
-            {index + 2}
-          </option>
-        ))}
-      </select>
-                       
-                      </div>
-                    </div>
-                    <div className="w-full px-3 md:w-1/2">
-                      <div className="mb-5">
-                        <label
-                          for="price"
-                          className="mb-2 block text-base font-medium text-white"
-                        >
-                          Price
-                        </label>
-                        <input
-                        disabled={isSaving }
-                          required   
-                          type="number"
-                          name="price"
-                          id="price"
-                          placeholder="Enter Price"
-                          className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
-                        />
-                      </div>
-                    </div>
                   </div>
 
+               
                   <div className="-mx-3 flex flex-wrap">
                     <div className="w-full px-3 md:w-1/2">
                       <div className="mb-5">

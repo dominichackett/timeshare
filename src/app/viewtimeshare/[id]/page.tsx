@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useState,useEffect } from 'react';
 import { Country, State, City }  from 'country-state-city';
 
-export default function CreateTimeShare() {
+export default function ViewTimeShare() {
  const [isSaving,setIsSaving] = useState()
  const [preview,setPreview] = useState()
  const [selectedFile, setSelectedFile] = useState()
@@ -122,12 +122,15 @@ export default function CreateTimeShare() {
 
                   <div className="rounded-md bg-[#4E4C64] py-4 px-8">
                    
-                  <div className="pt-2">
+                  <div className="pt-2 flex items-center justify-between">
                     <button disabled={isSaving }
                       className="hover:shadow-form w-full rounded-md bg-primary py-3 px-8 text-center text-base font-semibold text-white outline-none"
                     >
-                        Save TimeShare
+                        List TimeShare
                     </button>
+                   <input type='number' id="sharesToList" defaultValue={10} min={1}                          
+                   className="ml-2 w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
+/>
                   </div>                    
                    
                   </div>
@@ -198,8 +201,33 @@ export default function CreateTimeShare() {
                         />
                       </div>
                     </div>
+                 
+                    <div className="w-full px-3 md:w-1/2">
+                      <div className="mb-5">
+                        <label
+                          for="sharesOwned"
+                          className="mb-2 block text-base font-medium text-white"
+                        >
+                          No. Shares Owned
+                        </label>
+
+                        <select 
+        id="sharesOwned"
+        className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
+      >
+        {[...Array(51)].map((_, index) => (
+          <option key={index + 2} value={index + 2}>
+            {index + 2}
+          </option>
+        ))}
+      </select>
+                       
+                      </div>
+                    </div>
+
                   </div>
 
+                 
                   <div className="-mx-3 flex flex-wrap">
                     <div className="w-full px-3 md:w-1/2">
                       <div className="mb-5">
