@@ -101,7 +101,7 @@ catch(error:any)
 
 export const queryOwnedTimeShares = async(timeShareId:number,chain:string,owner:string)=>{
     try{
-    const { results } = await db.prepare(`SELECT * FROM ${ownedtimesharesTable} where timeShareId='${timeShareId} and chain='${chain}' and owner='${owner}'  ;`).all();
+    const { results } = await db.prepare(`SELECT ${ownedtimesharesTable}.id,${ownedtimesharesTable}.shares,${ownedtimesharesTable}.chain,${timesharesTable}.name,${timesharesTable}.price,${timesharesTable}.shares as totalshares,${timesharesTable}.photo as image,${profilesTable}.name as owner,${profilesTable}.photo, FROM ${ownedtimesharesTable} join ${timesharesTable} on ${ownedtimesharesTable}.timeshareId = ${timesharesTable}.id and ${timesharesTable} on ${ownedtimesharesTable}.chain = ${timesharesTable}.chain join ${profilesTable} on ${timesharesTable}.owner = ${profilesTable}.id where ${ownedtimesharesTable}.timeShareId='${timeShareId}' and ${ownedtimesharesTable}.chain='${chain}' and ${ownedtimesharesTable}.owner='${owner}'  ;`).all();
 
    return results;
 }
@@ -111,6 +111,31 @@ catch(error:any)
 }
 }
 
+
+export const queryMyTimeShares = async(timeShareId:number,chain:string,owner:string)=>{
+    try{
+    const { results } = await db.prepare(`SELECT ${timesharesTable}.*,${profilesTable}.name,${profilesTable}.photo as ownerphoto FROM ${timesharesTable} join ${profilesTable} on ${profilesTable}.id = ${timesharesTable}.owner where timeShareId='${timeShareId} and chain='${chain}' and owner='${owner}'  ;`).all();
+
+   return results;
+}
+catch(error:any)
+{
+    return []
+}
+}
+
+
+export const queryPurchasedTimeShares = async(timeShareId:number,chain:string,owner:string)=>{
+    try{
+    const { results } = await db.prepare(`SELECT * FROM ${ownedtimesharesTable} where timeShareId='${timeShareId} and chain='${chain}' and owner='${owner}'  ;`).all();
+
+   return results;
+}
+catch(error:any)
+{
+    return []
+}
+}
 export const queryProfile = async(id:string)=>{
     try{
     const { results } = await db.prepare(`SELECT * FROM ${profilesTable} where id='${id}';`).all();
@@ -122,3 +147,26 @@ catch(error:any)
     return []
 }
 }
+
+
+
+export const alterTable = async() =>{
+    const { meta: insert } = await db
+    .prepare(`Alter table ${listingsTable} ADD COLUMN chain text;`)
+    .run();
+     await db
+    .prepare(`Alter table ${listingsTable} ADD COLUMN country text;`)
+    .run();
+    await db
+    .prepare(`Alter table ${listingsTable} ADD COLUMN state text;`)
+    .run();
+    await db
+    .prepare(`Alter table ${listingsTable} ADD COLUMN city text;`)
+    .run();
+
+    await db
+    .prepare(`Alter table ${ownedtimesharesTable} ADD COLUMN chain text;`)
+    .run();
+
+
+    }

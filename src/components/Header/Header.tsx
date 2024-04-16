@@ -2,7 +2,7 @@
 //Changed header to header
 import { useState ,useEffect,useRef,useContext} from 'react'
 import chains from "@/chains/chains";
-//import { useAccountAbstraction } from "../../context/accountContext";
+import { useAccountAbstraction } from "../../context/accountContext";
 
 
   import { useRouter } from 'next/navigation'
@@ -13,8 +13,61 @@ import Link from 'next/link';
     const [navbarOpen,setNavbarOpen] = useState(false)
     const [submenuOpen,setSubmenuOpen] = useState(false)
     const [scrolledFromTop,setScrolledFromTop] = useState(true)
-    const [isAuthenticated,setIsAuthenticated]  = useState(true)  
+    const [isClient, setIsClient] = useState(false)
+
+    const session = true
+   const status = false    
+    const router  = useRouter()
+    const aCode = useRef()
+    const {
+        ownerAddress,
+        safes,
+        chainId,
+        isAuthenticated,
+        web3Provider,
+        loginWeb3Auth,
+        logoutWeb3Auth,
+        setChainId,
+        // ...other context values and functions you need
+      } = useAccountAbstraction();
+    
+      const [selectedChain, setSelectedChain] = useState(-1);
    
+   
+    useEffect(()=>{
+    //  if(!isAuthenticated && (router.pathname !="/" && router.pathname !="/support"  && router.pathname !="/viewtag" ))
+      //  router.push("/")
+    },[isAuthenticated])
+
+    const handleChange = (event:any) => {
+        const selectedChainIndex = parseInt(event.target.value); // Convert value to integer
+        setSelectedChain(selectedChainIndex); // Update the selected value
+      };
+    
+      const signIn = async () => {
+        if (selectedChain == -1) return;
+        setChainId(selectedChain);
+        loginWeb3Auth();
+      };
+    
+      const signOut = async () => {
+        logoutWeb3Auth();
+      };
+    
+      const handleClick = () => {
+        if (ownerAddress) {
+          // Copy the ownerAddress to the clipboard
+          navigator.clipboard.writeText(ownerAddress);
+        }
+      };
+    
+      useEffect(() => {
+        setSelectedChain(chainId);
+      }, [chainId]);
+ 
+      useEffect(() => {
+        setIsClient(true)
+      }, [])
   
     return( (<header
         className={`${scrolledFromTop ? 'z-50 bg-dark bg-opacity-70 shadow-sticky backdrop-blur-sm' : ' z-50'} header top-0 left-0 flex w-full items-center bg-transparent transition fixed`}
@@ -179,6 +232,66 @@ import Link from 'next/link';
                      
                    
                      </div>
+                     <div       className="mr-16 flex py-2 
+                       text-base font-semibold text-[#bababa] group-hover:text-white 
+                    lg:mr-0 lg:ml-6 lg:inline-flex lg:py-6 lg:px-0 xl:ml-6"
+                      > 
+                     {/*   <ConnectButton  />*/} 
+                     
+                     <div className="flex justify-between items-center">
+                <div className="space-x-4 flex-shrink-0">
+                  <div className=" space-x-4">
+                    <select
+                      value={selectedChain}
+                      className="relative inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                      onChange={handleChange}
+                    >
+                      <option key={-1} value={-1}>
+                        {" "}
+                        Select Chain
+                      </option>
 
+                      {chains.map((chain, index) => (
+                        <option key={index} value={index}>
+                          {chain.label}
+                        </option>
+                      ))}
+                    </select>
+                    {!isAuthenticated && (
+                      <button
+                        onClick={signIn}
+                        className="relative inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                      >
+                        Sign In
+                      </button>
+                    )}
+                    {isAuthenticated && (
+                      <button
+                        onClick={signOut}
+                        className="relative inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                      >
+                        Sign Out
+                      </button>
+                    )}{" "}
+                  </div>
+
+                 </div>
+                 {ownerAddress && (
+                    <div
+                      onClick={handleClick}
+                      className="ml-4 flex items-center bg-white rounded-xl p-2 cursor-pointer"
+                    >
+                      {" "}
+                      {ownerAddress && (
+                        <p className="font-bold text-black hover:text-red-500 ">
+                          {ownerAddress.substring(0, 6)}...
+                          {ownerAddress.substring(ownerAddress.length - 4)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                
+              </div>
+                     </div>
            </div></div>  </header>))
 }
