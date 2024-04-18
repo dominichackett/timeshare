@@ -5,61 +5,123 @@ import Footer from '@/components/Footer/Footer'
 import Image from 'next/image';
 import chains from '@/chains/chains';
 import Link from 'next/link'
+import { useAccountAbstraction } from "../../context/accountContext";
+import { queryAttestation ,createAttestation,adminCreateAttestation,decodeAttestation} from '@/ethsign/ethsign';
+import { ethers } from 'ethers';
+
 import { useState,useEffect } from 'react';
 import { Country, State, City }  from 'country-state-city';
-import { useAccountAbstraction } from "../../../context/accountContext";
-
-export default function ViewTimeShare() {
+import Notification from '@/components/Notification/Notification';
+export default function CreateTimeShare() {
  const [isSaving,setIsSaving] = useState()
  const [preview,setPreview] = useState()
- const [selectedFile, setSelectedFile] = useState()
- const [country,setCountry] = useState([])
+ const [country,setCountry] = useState()
  const [countries,setCountries] = useState([])
 
- const [state,setState] = useState([])
+ const [state,setState] = useState()
  const [states,setStates] = useState([])
- const [city,setCity] = useState([])
+ const [city,setCity] = useState()
  const [cities,setCities] = useState([])
- const {
+ const [gotVerified,setGotVerified] = useState()
+  // NOTIFICATIONS functions
+  const [notificationTitle, setNotificationTitle] = useState();
+  const [notificationDescription, setNotificationDescription] = useState();
+  const [dialogType, setDialogType] = useState(1);
+  const [show, setShow] = useState(false);
+  const close = async () => {
+setShow(false);
+};
+
+const {
   ownerAddress,
   safes,
   chainId,
+  privateKey,
   isAuthenticated,
   web3Provider,
   loginWeb3Auth,
   logoutWeb3Auth,
   setChainId,
+
   // ...other context values and functions you need
 } = useAccountAbstraction();
+
  useEffect(()=>{
   setCountries(Country.getAllCountries())
   console.log(City.getCitiesOfCountry("TT"))
+  loginWeb3Auth();
 
  },[])
- // create a preview as a side effect, whenever selected file is changed
- useEffect(() => {
-  if (!selectedFile) {
-      setPreview(undefined)
+
+ 
+ useEffect(()=>{
+  async function getAttestation(){
+     const at = await queryAttestation(ownerAddress)
+     console.log(privateKey)
+     console.log(at)
+     if(at.rows.length ==0)
+     {
+      setNotificationTitle("Verify Profile")
+      setNotificationDescription("Your address is not verified.")
+      setDialogType(2) //Error
+      setShow(true)
       return
+     }
+     else
+     {
+       setGotVerified(true)
+       const att = decodeAttestation(at.rows[0])
+       console.log(att)
+       
+     }
+
   }
 
-  const objectUrl = URL.createObjectURL(selectedFile)
-  setPreview(objectUrl)
+  if(ownerAddress)
+    getAttestation()
+ },[ownerAddress])
 
-  // free memory when ever this component is unmounted
-  return () => URL.revokeObjectURL(objectUrl)
-}, [selectedFile])
-
- const onSelectFile = (e) => {
-  if (!e.target.files || e.target.files.length === 0) {
-      return
-  }
-
-  // I've kept this example simple by using the first image instead of multiple
-  setSelectedFile(e.target.files[0])
+ 
+const adminVerify = async()=>{
+  const person = document.getElementById("ethaddress").value
+ 
+  const res = await adminCreateAttestation(person,country,state,city)
+  console.log(res)
+  
 }
- const createTimeShare = async()=>
- {}
+
+ const verifyProfile = async(event:any)=>
+ {
+     event.preventDefault()
+     const person = document.getElementById("ethaddress").value
+     
+     if(!ethers.utils.isAddress(person))
+     {
+        setNotificationTitle("Verify Profile")
+        setNotificationDescription("Invalid Ethereum Address")
+        setDialogType(2) //Error
+        setShow(true)
+        return
+     }
+
+     setNotificationTitle("Verify Profile")
+     setNotificationDescription("Verifying Profile")
+     setDialogType(3) //Info
+     setShow(true)
+    
+     console.log(privateKey)
+     const wallet = new ethers.Wallet(privateKey)
+  console.log(wallet.privateKey)
+  console.log(wallet.getAddress())
+     //const privateKey32Bytes = privateKey64Bytes.substring(0, 64);
+
+     const res = await createAttestation(person,country,state,city,privateKey)
+     setNotificationTitle("Verify Profile")
+     setNotificationDescription("Account Successfully Verified")
+     setDialogType(1) //Success
+     setShow(true)
+      
+ }
 
 
  const countryChanged = (event:any)=>{
@@ -74,7 +136,17 @@ export default function ViewTimeShare() {
   console.log(event.target.value)
   console.log(_cities)
    setCities(_cities)
+   setState(event.target.value)
+
  }   
+
+
+ const cityChanged = (event:any)=>{
+   setCity(event.target.value)
+
+ }   
+
+ 
   return (
     <>
       <Head>
@@ -107,25 +179,17 @@ export default function ViewTimeShare() {
       <div
           className="relative  overflow-hidden rounded-xl bg-bg-color"
         >       
-        <form className="p-8 sm:p-10"  onSubmit={ createTimeShare}>
+        <form className="p-8 sm:p-10"  onSubmit={ verifyProfile}>
             <div className="-mx-5 flex flex-wrap xl:-mx-8">
               <div className="w-full px-5 lg:w-5/12 xl:px-8">
               <div className="mb-12 lg:mb-0">
                   <div className="mb-8">
-                    <input
-                      disabled={isSaving }
-                      required={!selectedFile ? true: false}
-                      type="file"
-                      name="eventImage"
-                      id="eventImage"
-                      className="sr-only"
-                      onChange={onSelectFile}
-                    />
+                  
                     <label
                       for="eventImage"
                       className="cursor-pointer relative flex h-[480px] min-h-[200px] items-center justify-center rounded-lg border border-dashed border-[#A1A0AE] bg-[#353444] p-12 text-center"
                     >
-                     <img src={preview ? preview: '/images/default-image.jpg'}/>
+                     <img src={preview ? preview: '/images/sign.webp'}/>
                     </label>
                   </div>
 
@@ -133,15 +197,21 @@ export default function ViewTimeShare() {
 
                   <div className="rounded-md bg-[#4E4C64] py-4 px-8">
                    
-                  <div className="pt-2 flex items-center justify-between">
-                    <button disabled={isSaving }
+                  <div className="pt-2">
+                    <button disabled={isSaving || !gotVerified}
                       className="hover:shadow-form w-full rounded-md bg-primary py-3 px-8 text-center text-base font-semibold text-white outline-none"
                     >
-                        List TimeShare
+                        Verify Profile
                     </button>
-                   <input type='number' id="sharesToList" defaultValue={10} min={1}                          
-                   className="ml-2 w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
-/>
+
+                    <button 
+                     hidden={true}
+                      className="hover:shadow-form w-full rounded-md bg-primary py-3 px-8 text-center text-base font-semibold text-white outline-none"
+                    type='button'
+                    onClick={()=>adminVerify()}
+                   >
+                      Admin Verify
+                    </button>
                   </div>                    
                    
                   </div>
@@ -151,106 +221,30 @@ export default function ViewTimeShare() {
                 <div>
                 <div className="mb-5 pt-2">
                     <p className="text-xl font-bold text-white">
-                      TimeShare Details
+                      Verify Profile
                     </p>
                   </div>
-
-                  <div className="flex items-center mt-4 ">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <img crossOrigin  className="cursor-pointer  h-8 w-8 rounded-full" 
-                        src={chains[chainId].icon} alt="" />
-                      </div>
-                      <div className="mt-2 mr-2">
-                      <div  className="mb-4 cursor-pointer text-sm font-medium text-white">{chains[chainId].label} </div>
-
-                         </div>
-                    </div> 
-                 
                   <div className="mb-5">
                         <label
-                          for="name"
+                          for="ethaddress"
                           className="mb-2 block text-base font-medium text-white"
                         >
-                          Name
+                          ETH Address
                         </label>
                         <input
                         disabled={isSaving }
                           required   
                           type="text"
-                          name="name"
-                          id="name"
-                          placeholder="Enter Name"
+                          name="ethaddress"
+                          id="ethaddress"
+                          placeholder="Enter ETH Address"
                           className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
                         />
                       </div>                  <div className="-mx-3 flex flex-wrap">
-                    <div className="w-full px-3 md:w-1/2">
-                      <div className="mb-5">
-                        <label
-                          for="shares"
-                          className="mb-2 block text-base font-medium text-white"
-                        >
-                          No. Shares
-                        </label>
-
-                        <select 
-        id="shares"
-        className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
-      >
-        {[...Array(51)].map((_, index) => (
-          <option key={index + 2} value={index + 2}>
-            {index + 2}
-          </option>
-        ))}
-      </select>
-                       
-                      </div>
-                    </div>
-                    <div className="w-full px-3 md:w-1/2">
-                      <div className="mb-5">
-                        <label
-                          for="price"
-                          className="mb-2 block text-base font-medium text-white"
-                        >
-                          Price
-                        </label>
-                        <input
-                        disabled={isSaving }
-                          required   
-                          type="number"
-                          name="price"
-                          id="price"
-                          placeholder="Enter Price"
-                          className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
-                        />
-                      </div>
-                    </div>
-                 
-                    <div className="w-full px-3 md:w-1/2">
-                      <div className="mb-5">
-                        <label
-                          for="sharesOwned"
-                          className="mb-2 block text-base font-medium text-white"
-                        >
-                          No. Shares Owned
-                        </label>
-
-                        <select 
-        id="sharesOwned"
-        className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
-      >
-        {[...Array(51)].map((_, index) => (
-          <option key={index + 2} value={index + 2}>
-            {index + 2}
-          </option>
-        ))}
-      </select>
-                       
-                      </div>
-                    </div>
-
+                    
+                    
                   </div>
 
-                 
                   <div className="-mx-3 flex flex-wrap">
                     <div className="w-full px-3 md:w-1/2">
                       <div className="mb-5">
@@ -307,7 +301,7 @@ export default function ViewTimeShare() {
                         <select 
         id="cities"
         className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
- 
+       onChange={cityChanged}
       >
         <option value="">City</option>
         {cities.map((_city,index) => (
@@ -318,25 +312,7 @@ export default function ViewTimeShare() {
       </select>                       </div>
              
                  
-                  <div className="mb-5">
-                    <label
-                      for="description"
-                      className="mb-2 block text-base font-medium text-white"
-                    >
-                      Description
-                    </label>
-                    <textarea
-                      disabled={isSaving }
-                      required
-                      rows="10"
-                      name="description"
-                      id="description"
-                      placeholder="Type event description"
-                      className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
-                    ></textarea>
-                  </div>
-             
-                 
+               
                  
                 </div>
               </div>
@@ -347,6 +323,13 @@ export default function ViewTimeShare() {
 
       
     </section>
+    <Notification
+        type={dialogType}
+        show={show}
+        close={close}
+        title={notificationTitle}
+        description={notificationDescription}
+      />
     <Footer />
      </main>
      </>

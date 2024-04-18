@@ -98,7 +98,15 @@ export default function TimeShare() {
                       <h3>Status</h3>
                       <p>{timeshare.status}</p>
                     </div>
-                    
+                    <div className="mt-4 flex items-center justify-between text-base font-medium text-white">
+                   
+                    <Link
+                    href={`/booking/${timeshare.id}`}
+                      className="hover:shadow-form w-full rounded-md bg-primary py-3 px-8 text-center text-base font-semibold text-white outline-none"
+                    >
+                        Book TimeShare
+                    </Link>
+                    </div>
                   </div>
                 ))}
               </div>

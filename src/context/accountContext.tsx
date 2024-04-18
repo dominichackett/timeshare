@@ -7,9 +7,25 @@ import { createContext, useCallback, useContext, useEffect, useState ,useMemo } 
 import { CHAIN_NAMESPACES, WALLET_ADAPTERS } from '@web3auth/base'
 import { Web3AuthOptions } from '@web3auth/modal'
 import { OpenloginAdapter } from '@web3auth/openlogin-adapter'
-import Chain from '../models/chains'
-import chains from '../chains/chains'
-
+import Chain from '@/models/chains'
+import chains from '@/chains/chains'
+import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
+function stringify(obj) {
+  let cache = [];
+  let str = JSON.stringify(obj, function(key, value) {
+    if (typeof value === "object" && value !== null) {
+      if (cache.indexOf(value) !== -1) {
+        // Circular reference found, discard key
+        return;
+      }
+      // Store value in our collection
+      cache.push(value);
+    }
+    return value;
+  });
+  cache = null; // reset the cache
+  return str;
+}
 type accountAbstractionContextValue = {
     ownerAddress?: string
     chainId: number
@@ -17,6 +33,7 @@ type accountAbstractionContextValue = {
     chain?: Chain
     isAuthenticated: boolean
     isEditingEnabled:boolean
+    privateKey:string
     web3Provider?: ethers.providers.Web3Provider
     
     
@@ -40,6 +57,7 @@ type accountAbstractionContextValue = {
     isEditingEnabled:false,
     web3Provider:null,
     setEditingEnabled:()=>{},
+    privateKey:"",
     web3ProviderUrl:"",  
     
         loginWeb3Auth: () => {},
@@ -61,6 +79,7 @@ type accountAbstractionContextValue = {
   
   if (storedState) {
      initialState = JSON.parse(storedState);
+     console.log(storedState)
   }
 }
   const accountAbstractionContext = createContext<accountAbstractionContextValue>(initialState )
@@ -92,7 +111,7 @@ type accountAbstractionContextValue = {
     
     // web3 provider to perform signatures
     const [web3Provider, setWeb3Provider] = useState<ethers.providers.Web3Provider>()
-    
+    const [privateKey,setPrivateKey] = useState()
     const [web3ProviderConnected,setWeb3ProviderConnected] = useState(false)
     const [isAuthenticated , setIsAuthenticated] = useState(!! initialState.ownerAddress) ///&& !!chainId
     const chain = chains[chainId]
@@ -122,15 +141,24 @@ type accountAbstractionContextValue = {
         return 
         console.log("We got a chain")*/
       try {
+
+        const chainConfig = {
+            chainNamespace: CHAIN_NAMESPACES.EIP155,
+            chainId: chains[chainId].id,
+            rpcTarget: chains[chainId].rpcUrl,
+            displayName: chains[chainId].label,
+            blockExplorer: chains[chainId].blockExplorerUrl,
+            ticker: chains[chainId].token,
+            tickerName: chains[chainId].shortName,
+          };
+          const privateKeyProvider = new EthereumPrivateKeyProvider({
+            config: { chainConfig },
+          });
+
         const options: Web3AuthOptions = {
             clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID , // https://dashboard.web3auth.io/
-            web3AuthNetwork: 'testnet',
-            chainConfig: {
-              chainNamespace: CHAIN_NAMESPACES.EIP155,
-              chainId: chains[chainId].id,
-              // https://chainlist.org/
-              rpcTarget:chains[chainId].rpcUrl
-            },
+            web3AuthNetwork: "testnet",
+            chainConfig,
             uiConfig: {
               theme: 'dark',
               loginMethodsOrder: ['google', 'facebook']
@@ -150,20 +178,22 @@ const modalConfig = {
       showOnMobile: false
     }
   }
-  
+
+ 
+
   // https://web3auth.io/docs/sdk/pnp/web/modal/whitelabel#whitelabeling-while-modal-initialization
   const openloginAdapter = new OpenloginAdapter({
     loginSettings: {
-      mfaLevel: 'mandatory'
+      mfaLevel: 'optional'
     },
     adapterSettings: {
       uxMode: 'popup',
       whiteLabel: {
         name: 'Safe'
       }
-    }
+    },          
+
   })
-  
   const web3AuthConfig: Web3AuthConfig = {
     txServiceUrl: chains[chainId].transactionServiceUrl
   }
@@ -173,13 +203,17 @@ const modalConfig = {
           adapters: [openloginAdapter],
           modalConfig
         })
-  
+
         if (web3AuthModalPack && chain?.id)  {
-          const { safes, eoa } = await web3AuthModalPack.signIn()
+         const { safes, eoa } = await web3AuthModalPack.signIn()
           const provider = web3AuthModalPack.getProvider() as ethers.providers.ExternalProvider
-  
+          console.log(web3AuthModalPack.web3Auth)
+
+          console.log(provider)
           // we set react state with the provided values: owner (eoa address), chain, safes owned & web3 provider
           console.log(chain)
+          console.log(web3AuthModalPack)
+          setPrivateKey(web3AuthModalPack.web3Auth.walletAdapters.openlogin.openloginInstance.privKey)
           //setChainId(chains[1].id)
           setOwnerAddress(eoa)
           setIsAuthenticated(true)
@@ -198,7 +232,9 @@ const modalConfig = {
     const logoutWeb3Auth = () => {
       web3AuthModalPack?.signOut()
       setEditingEnabled(false)
+      
       setOwnerAddress('')
+      setPrivateKey(null)
       setIsAuthenticated(false)
       setSafes([])
       setChainId(1)
@@ -237,7 +273,7 @@ const modalConfig = {
       safes,
   
       isAuthenticated,
-  
+      privateKey,
       web3Provider,
       web3ProviderConnected,
       loginWeb3Auth,
@@ -250,8 +286,10 @@ const modalConfig = {
     }
 
     if (typeof localStorage !== 'undefined') 
+    {
+      console.log(state)
       localStorage.setItem('accountAbstractionState', JSON.stringify(state));
-
+    }
     return (
       <accountAbstractionContext.Provider value={state}>
         {children}

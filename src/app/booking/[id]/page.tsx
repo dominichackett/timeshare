@@ -137,7 +137,7 @@ export default function ViewTimeShare() {
                     <button disabled={isSaving }
                       className="hover:shadow-form w-full rounded-md bg-primary py-3 px-8 text-center text-base font-semibold text-white outline-none"
                     >
-                        List TimeShare
+                        Book TimeShare
                     </button>
                    <input type='number' id="sharesToList" defaultValue={10} min={1}                          
                    className="ml-2 w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"

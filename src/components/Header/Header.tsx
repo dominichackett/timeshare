@@ -163,6 +163,13 @@ import Link from 'next/link';
                             >
                               Purchased Time Shares
                             </Link>
+
+                            <Link
+                              href="/verifyprofile"
+                              className="block rounded py-[10px] px-4 text-sm font-medium text-[#bababa] hover:text-white"
+                            >
+                              Verify Profile
+                            </Link>
                           </div>
                           
                         </li>}

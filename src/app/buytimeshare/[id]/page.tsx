@@ -7,6 +7,7 @@ import chains from '@/chains/chains';
 import Link from 'next/link'
 import { useState,useEffect } from 'react';
 import { Country, State, City }  from 'country-state-city';
+import { useAccountAbstraction } from "../../../context/accountContext";
 
 export default function BuyTimeShare() {
  const [isSaving,setIsSaving] = useState()
@@ -19,6 +20,17 @@ export default function BuyTimeShare() {
  const [states,setStates] = useState([])
  const [city,setCity] = useState([])
  const [cities,setCities] = useState([])
+ const {
+  ownerAddress,
+  safes,
+  chainId,
+  isAuthenticated,
+  web3Provider,
+  loginWeb3Auth,
+  logoutWeb3Auth,
+  setChainId,
+  // ...other context values and functions you need
+} = useAccountAbstraction();
 
  useEffect(()=>{
   setCountries(Country.getAllCountries())
@@ -143,6 +155,18 @@ export default function BuyTimeShare() {
                       TimeShare Details
                     </p>
                   </div>
+
+                  <div className="flex items-center mt-4 ">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <img crossOrigin  className="cursor-pointer  h-8 w-8 rounded-full" 
+                        src={chains[chainId].icon} alt="" />
+                      </div>
+                      <div className="mt-2 mr-2">
+                      <div  className="mb-4 cursor-pointer text-sm font-medium text-white">{chains[chainId].label} </div>
+
+                         </div>
+                    </div> 
+                 
                   <div className="mb-5">
                         <label
                           for="name"

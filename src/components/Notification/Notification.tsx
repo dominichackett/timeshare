@@ -13,12 +13,13 @@ export default function Notification(props:any) {
     props.close();
   };
 
+ 
   return (
     <>
       {/* Global notification live region, render this permanently at the end of the document */}
       <div
         aria-live="assertive"
-        className="fixed top-14 left-0 right-0	 z-5 flex items-end px-4 py-6 pointer-events-none sm:p-6 sm:items-start"
+        className="fixed top-14 left-0 right-0	 z-50 flex items-end px-4 py-6 pointer-events-none sm:p-6 sm:items-start"
       >
         <div className="w-full flex flex-col items-center space-y-4 sm:items-end">
           {/* Notification panel, dynamically insert this into the live region when it needs to be displayed */}
