@@ -29,7 +29,16 @@ const { meta: insert } = await db
 //await insert.txn?.wait();
 }
 
+export const updateProfile =async (id:string,name:string,photo:string,description:string,country:string,state:string,city:string) => {
+    // Insert a row into the table
+const { meta: insert } = await db
+.prepare(`Update ${profilesTable}  set name=?,photo=?,description=?,country=?,state=?,city=? where id=?;`)
+.bind(name,photo,description,country,state,city,id)
+.run();
 
+// Wait for transaction finality
+//await insert.txn?.wait();
+}
 export const insertTimeshare =async (id:number,name:string,photo:string,description:string,country:string,state:string,city:string,chain:string,shares:number,price:number,owner:string) => {
     // Insert a row into the table
 const { meta: insert } = await db

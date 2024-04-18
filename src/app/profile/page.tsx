@@ -5,26 +5,96 @@ import Footer from '@/components/Footer/Footer'
 import Image from 'next/image';
 import chains from '@/chains/chains';
 import Link from 'next/link'
-import { useState,useEffect } from 'react';
+import { useState,useEffect,useRef } from 'react';
 import { Country, State, City }  from 'country-state-city';
-
+import { useAccountAbstraction } from "../../context/accountContext";
+import { queryProfile ,insertProfile,updateProfile} from '../../../tableland/tableland';
+import Notification from '@/components/Notification/Notification';
+import { uploadToLightHouse,uploadFile } from '@/lighthouse/lighthouse';
 export default function Profile() {
  const [isSaving,setIsSaving] = useState()
  const [preview,setPreview] = useState()
  const [selectedFile, setSelectedFile] = useState()
- const [country,setCountry] = useState([])
+ const [target,setTarget] = useState()
+ const filename = useRef()
+
+ const [country,setCountry] = useState()
  const [countries,setCountries] = useState([])
 
- const [state,setState] = useState([])
+ const [state,setState] = useState()
  const [states,setStates] = useState([])
- const [city,setCity] = useState([])
+ const [city,setCity] = useState()
  const [cities,setCities] = useState([])
+ const [profileExist,setProfileExist] = useState(false)
+ const [gotProfile,setGotProfile] = useState(false)
+ const [profile,setProfile] = useState({})
+ // NOTIFICATIONS functions
+  const [notificationTitle, setNotificationTitle] = useState();
+  const [notificationDescription, setNotificationDescription] = useState();
+  const [dialogType, setDialogType] = useState(1);
+  const [show, setShow] = useState(false);
+  const close = async () => {
+setShow(false);
+};
 
- useEffect(()=>{
+const {
+  ownerAddress,
+  safes,
+  chainId,
+  privateKey,
+  isAuthenticated,
+  web3Provider,
+  loginWeb3Auth,
+  logoutWeb3Auth,
+  setChainId,
+
+  // ...other context values and functions you need
+} = useAccountAbstraction();
+
+
+useEffect(()=>{
+  async function getProfile()
+  {
+     const _profile = await queryProfile(ownerAddress)
+     if(_profile.length > 0)
+    {
+      console.log(_profile)
+
+      const _states = State.getStatesOfCountry(_profile[0].country)
+      const _cities = City.getCitiesOfState(_profile[0].country,_profile[0].state)
+      setCountry(_profile[0].country)     
+      setState(_profile[0].state)
+      setCity(_profile[0].city)
+      setCities(_cities)
+      setStates(_states)
+      document.getElementById("description").value = _profile[0].description
+      document.getElementById("name").value= _profile[0].name
+       setGotProfile(true)
+       setProfileExist(true)
+       setProfile(_profile[0])
+        const image =  await fetch(_profile[0].photo)
+       if(image.ok)
+       {
+            console.log(image)
+             setSelectedFile(await image.blob())
+             // const objectUrl = URL.createObjectURL(await image.blob())
+             //setPreview(objectUrl)
+       }   
+      else
+    {
+      setGotProfile(true)
+      setProfileExist(false)
+    }   
+  }
+} 
+  
+  if(ownerAddress)
+  getProfile()
   setCountries(Country.getAllCountries())
   console.log(City.getCitiesOfCountry("TT"))
 
- },[])
+},[ownerAddress])
+
  // create a preview as a side effect, whenever selected file is changed
  useEffect(() => {
   if (!selectedFile) {
@@ -46,13 +116,60 @@ export default function Profile() {
 
   // I've kept this example simple by using the first image instead of multiple
   setSelectedFile(e.target.files[0])
+  filename.current = e.target.files[0].name
+  setTarget(e.target.files)
+
 }
- const createTimeShare = async()=>
- {}
+ const saveProfile = async(event:any)=>
+ {
+   event.preventDefault()
+   setIsSaving(true)
+   setNotificationTitle("Save Profile")
+    setNotificationDescription("Saving Profile.")
+    setDialogType(3) //Information
+    setShow(true)     
+   
+   try{
+    let photo
+    if(filename.current)
+    {
+    const upload = await uploadToLightHouse(target)
+   console.log(upload)
+      photo = `https://gateway.lighthouse.storage/ipfs/${upload.data.Hash}`
+    }else
+    {
+       photo = profile.photo 
+    }
+     const description = document.getElementById("description").value
+     const name = document.getElementById("name").value
+    if(profileExist)
+    {
+       await updateProfile(ownerAddress,name,photo,description,country,state,city)
+    }else
+    {
+       await insertProfile(ownerAddress,name,photo,description,country,state,city)
+    }  
+
+    setNotificationTitle("Save Profile")
+    setNotificationDescription("Profile saved succesfully")
+    setDialogType(1) //Success
+    setShow(true)    
+    setIsSaving(false)
+   }catch(error)
+   {
+    setNotificationTitle("Save Profile")
+    setNotificationDescription("Error updating profile")
+    setDialogType(2) //Error
+    setShow(true)    
+    setIsSaving(false)
+   }
+
+ }
 
 
  const countryChanged = (event:any)=>{
      const _states = State.getStatesOfCountry(event.target.value)
+     
       setStates(_states)
       setCountry(event.target.value)
     } 
@@ -63,7 +180,12 @@ export default function Profile() {
   console.log(event.target.value)
   console.log(_cities)
    setCities(_cities)
+   setState(event.target.value)
  }   
+
+ const cityChanged = (event:any)=>{
+   setCity(event.target.value) 
+}
   return (
     <>
       <Head>
@@ -96,7 +218,7 @@ export default function Profile() {
       <div
           className="relative  overflow-hidden rounded-xl bg-bg-color"
         >       
-        <form className="p-8 sm:p-10"  onSubmit={ createTimeShare}>
+        <form className="p-8 sm:p-10"  onSubmit={ saveProfile}>
             <div className="-mx-5 flex flex-wrap xl:-mx-8">
               <div className="w-full px-5 lg:w-5/12 xl:px-8">
               <div className="mb-12 lg:mb-0">
@@ -172,7 +294,7 @@ export default function Profile() {
                         >
                           Country
                         </label>
-                        <select onChange={countryChanged}
+                        <select onChange={countryChanged} value={country}
         id="countries"
         className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
  
@@ -196,7 +318,7 @@ export default function Profile() {
                         <select onChange={stateChanged}
         id="states"
         className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
- 
+        value={state}
       >
         <option value="">State</option>
         {states.map((_state) => (
@@ -218,8 +340,9 @@ export default function Profile() {
                         </label>
                         <select 
         id="cities"
+        onChange={cityChanged}
         className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
- 
+       value={city}
       >
         <option value="">City</option>
         {cities.map((_city,index) => (
@@ -243,7 +366,7 @@ export default function Profile() {
                       rows="10"
                       name="description"
                       id="description"
-                      placeholder="Type event description"
+                      placeholder="Type profile description"
                       className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
                     ></textarea>
                   </div>
@@ -259,6 +382,13 @@ export default function Profile() {
 
       
     </section>
+    <Notification
+        type={dialogType}
+        show={show}
+        close={close}
+        title={notificationTitle}
+        description={notificationDescription}
+      />
     <Footer />
      </main>
      </>
