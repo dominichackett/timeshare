@@ -8,18 +8,19 @@ import Link from 'next/link'
 import { useState,useEffect } from 'react';
 import { Country, State, City }  from 'country-state-city';
 import { useAccountAbstraction } from "../../../context/accountContext";
-
+import { queryBooking } from '../../../../tableland/tableland';
 export default function ViewTimeShare() {
  const [isSaving,setIsSaving] = useState()
  const [preview,setPreview] = useState()
  const [selectedFile, setSelectedFile] = useState()
  const [country,setCountry] = useState([])
  const [countries,setCountries] = useState([])
-
+ const [bookings,setBookings] = useState([{id:1,name:"Dominic Hackett", week:1}])
  const [state,setState] = useState([])
  const [states,setStates] = useState([])
  const [city,setCity] = useState([])
  const [cities,setCities] = useState([])
+ const [year] = useState(new Date())
  const {
   ownerAddress,
   safes,
@@ -75,6 +76,15 @@ export default function ViewTimeShare() {
   console.log(_cities)
    setCities(_cities)
  }   
+
+ const getBookings = async(event:any)=>{
+    
+   alert(event.target.value)
+   return
+    const _week = document.getElementById("week").value
+    const _bookings = await queryBooking(1,year,_week,chainId);
+    setBookings(_bookings)
+ }
   return (
     <>
       <Head>
@@ -139,12 +149,56 @@ export default function ViewTimeShare() {
                     >
                         Book TimeShare
                     </button>
-                   <input type='number' id="sharesToList" defaultValue={10} min={1}                          
+                   <input type='number' id="year" defaultValue={year.getFullYear()} min={year?.getFullYear()} onChange={getBookings}                          
                    className="ml-2 w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
 />
-                  </div>                    
-                   
+                  </div>     
+                  <div className="mt-2 w-full px-3 md:w-1/2">
+                      <div className="mb-5">
+                        <label
+                          for="week"
+                          className="mb-2 block text-base font-medium text-white"
+                        >
+                          Week
+                        </label>
+
+                        <select 
+        id="week"
+        className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
+      >
+        {[...Array(52)].map((_, index) => (
+          <option key={index} value={index}>
+            {index + 1}
+          </option>
+        ))}
+      </select>
+                       
+                      </div>
+                    </div>               
+                      <div className="mb-5">
+                        <label
+                          for="bookings"
+                          className="mb-2 block text-base font-medium text-white"
+                        >
+                          Bookings
+                        </label>
+
+                        <select 
+        id="bookings"
+        className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
+      >
+        {bookings.map((booking, index) => (
+          <option key={booking.id} value={booking.id}>
+            {booking.name} - Week: {booking.week}
+          </option>
+        ))}
+      </select>
+                       
+                      
+                    </div>     
                   </div>
+
+                  
                 </div>
               </div>
               <div className="w-full px-5 lg:w-7/12 xl:px-8">

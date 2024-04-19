@@ -3,7 +3,7 @@ import {ethers} from "ethers"
 export const timesharesTable ="timeshares_314159_860"
 export const listingsTable ="listings_314159_857"
 export const ownedtimesharesTable = "ownedtimeshares_314159_861"
-
+export const bookingsTable = "bookings_314159_863"
 export const profilesTable = "profiles_314159_858"
 
 const wallet = new ethers.Wallet(process.env.NEXT_PUBLIC_PRIVATE_KEY)
@@ -17,7 +17,17 @@ const signer = wallet.connect(provider);
 
 const db = new Database({signer})  
 
+export const insertBooking =async (owner:string,week:number,year:number,timeShareId:number,chain:number) => {
+    // Insert a row into the table
+ const id = `${timeShareId}_${chain}_${year}_${week}`   
+const { meta: insert } = await db
+.prepare(`INSERT INTO ${bookingsTable} (id, owner,week,year,timeShareId,chain) VALUES ( ?,?,?,?,?,?);`)
+.bind(id,owner,week,year,timeShareId,chain.toString())
+.run();
 
+// Wait for transaction finality
+//await insert.txn?.wait();
+}
 export const insertProfile =async (id:string,name:string,photo:string,description:string,country:string,state:string,city:string) => {
     // Insert a row into the table
 const { meta: insert } = await db
@@ -148,6 +158,19 @@ catch(error:any)
 export const queryProfile = async(id:string)=>{
     try{
     const { results } = await db.prepare(`SELECT * FROM ${profilesTable} where id='${id}';`).all();
+
+   return results;
+}
+catch(error:any)
+{
+    return []
+}
+}
+
+
+export const queryBooking = async(timeshareId:number,year:number,week:number,chain:number)=>{
+    try{
+    const { results } = await db.prepare(`SELECT ${bookingsTable}.*,${profilesTable}.name,${profilesTable}.photo  FROM ${bookingsTable} join ${profilesTable} on ${profilesTable}.id = ${bookingsTable}.owner  where  chain='${chain}' and year=${year} and week=${week} and timeshareId=${timeshareId} ;`).all();
 
    return results;
 }
