@@ -5,22 +5,43 @@ import Footer from '@/components/Footer/Footer'
 import Image from 'next/image';
 import chains from '@/chains/chains';
 import Link from 'next/link'
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { alterTable } from '../../../tableland/tableland';
-export default function MyTimeShare() {
-  const [timeshares,setTimeShares] = useState([{id:1,name:"Electric Bike",price:100,shares:10,status:"Available"
-  ,image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[0]}
-  ,{id:2,name:"Electric Bike",price:100,shares:10,status:"Available",image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[1]}
-  ,{id:3,name:"Electric Bike",price:100,shares:10,status:"Available",image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[2]}
-  ,{id:4,name:"Electric Bike",price:100,shares:10,status:"Available",image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[3]}])
- const router = useRouter()
+import { queryMyTimeShares } from '../../../tableland/tableland';
+import { useAccountAbstraction } from "../../context/accountContext";
 
- const handleAlter = async()=>{
-   alert("Starting")
-    await alterTable()
-    alert("Finished")
- }
+export default function MyTimeShare() {
+  const [timeshares,setTimeShares] = useState([])
+   const router = useRouter()
+ const {
+  ownerAddress,
+  safes,
+  chainId,
+  privateKey,
+  isAuthenticated,
+  web3Provider,
+  loginWeb3Auth,
+  logoutWeb3Auth,
+  setChainId,
+
+  // ...other context values and functions you need
+} = useAccountAbstraction();
+
+
+ 
+  useEffect(()=>{
+  
+   async function getTimeShares()
+   { 
+       const _timeshares = await queryMyTimeShares(ownerAddress)
+       setTimeShares(_timeshares)
+       console.log(_timeshares)
+   }
+
+   if(ownerAddress)
+     getTimeShares()
+
+  },[ownerAddress])
   return (
     <>
       <Head>
@@ -57,32 +78,26 @@ export default function MyTimeShare() {
                 >
                   Create TimeShare
                 </Link>
-                <button
-                  onClick={()=>handleAlter()}
-                  className="mr-5 mb-5 inline-flex items-center justify-center rounded-md border-2 border-primary bg-primary py-3 px-7 text-base font-semibold text-white transition-all hover:bg-opacity-90"
-                >
-                  Alter Tableland
-                </button>
         <div className="mb-12 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
                 {timeshares.map((timeshare) => (
                   <div key={timeshare.id} className=' bg-bg-color p-4 rounded-lg border border-dashed border-[#A1A0AE]'>
-                  <button  onClick={()=>router.push(`/viewtimeshare/${timeshare.id}`)} className="cursor-pointer group">
+                  <button  onClick={()=>router.push(`/viewtimeshare/${timeshare.id}_${timeshare.chain}`)} className="cursor-pointer group">
                     <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-lg sm:aspect-h-3 sm:aspect-w-2">
                       <img
-                        src={timeshare.image}
+                        src={timeshare.photo}
                         alt={timeshare.name}
-                        className="h-[300px]  w-full object-cover object-center group-hover:opacity-75"
+                        className="h-[300px]  w-full object-fit object-center group-hover:opacity-75"
                       />
                     </div>
                     </button>
 
                     <div className="flex items-center mt-4 ">
                       <div className="flex-shrink-0 h-10 w-10">
-                        <img crossOrigin  className="cursor-pointer  h-8 w-8 rounded-full" 
-                        src={timeshare.chain.icon} alt="" />
+                        <img crossOrigin  className="cursor-pointer  h-8 w-8 rounded-full " 
+                        src={chains[timeshare.chain].icon} alt="" />
                       </div>
                       <div className="mt-2 mr-2">
-                      <div  className="mb-4 cursor-pointer text-sm font-medium text-white">{timeshare.chain.label}</div>
+                      <div  className="mb-4 cursor-pointer text-sm font-medium text-white">{chains[timeshare.chain].label}</div>
 
                          </div>
                     </div> 
@@ -99,15 +114,8 @@ export default function MyTimeShare() {
                       <h3>Available Shares</h3>
                       <p>{timeshare.shares}</p>
                     </div>
-                    <div className="mt-4 flex items-center justify-between text-base font-medium text-white">
-                      <h3>Shares Owned</h3>
-                      <p>{timeshare.shares}</p>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between text-base font-medium text-white">
-                      <h3>Status</h3>
-                      <p>{timeshare.status}</p>
-                    </div>
                     
+                  
                   </div>
                 ))}
               </div>

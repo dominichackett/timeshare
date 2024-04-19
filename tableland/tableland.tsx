@@ -1,6 +1,6 @@
 import { Database } from "@tableland/sdk";
 import {ethers} from "ethers"
-export const timesharesTable ="timeshares_314159_860"
+export const timesharesTable ="mytimeshares_314159_314159_864"
 export const listingsTable ="listings_314159_857"
 export const ownedtimesharesTable = "ownedtimeshares_314159_861"
 export const bookingsTable = "bookings_314159_863"
@@ -53,7 +53,7 @@ export const insertTimeshare =async (id:number,name:string,photo:string,descript
     // Insert a row into the table
 const { meta: insert } = await db
 .prepare(`INSERT INTO ${timesharesTable} (id, name,photo,description,country,state,city,chain,shares,price,owner) VALUES ( ?,?,?,?,?,?,?,?,?,?,?);`)
-.bind(id,name,photo,description,country,state,city)
+.bind(id,name,photo,description,country,state,city,chain,shares,price,owner)
 .run();
 
 // Wait for transaction finality
@@ -69,7 +69,7 @@ const listing = await querylisting(id,chain)
 if( listing.length <= 0)
 {
 const { meta: insert } = await db
-.prepare(`INSERT INTO ${listingsTable} (id,timeshareId,shares,available,owner,datelisted,chain) VALUES ( ?,?,?,?,?,?,?);`)
+.prepare(`INSERT INTO ${listingsTable} (id,timeshareid,shares,available,owner,datelisted,chain) VALUES ( ?,?,?,?,?,?,?);`)
 .bind(id,timeshareId,shares,shares,owner,datelisted)
 .run();
 }else
@@ -131,9 +131,21 @@ catch(error:any)
 }
 
 
-export const queryMyTimeShares = async(timeShareId:number,chain:string,owner:string)=>{
+export const queryMyTimeShares = async(owner:string)=>{
     try{
-    const { results } = await db.prepare(`SELECT ${timesharesTable}.*,${profilesTable}.name,${profilesTable}.photo as ownerphoto FROM ${timesharesTable} join ${profilesTable} on ${profilesTable}.id = ${timesharesTable}.owner where timeShareId='${timeShareId} and chain='${chain}' and owner='${owner}'  ;`).all();
+    const { results } = await db.prepare(`SELECT ${timesharesTable}.*,${profilesTable}.photo as ownerphoto FROM ${timesharesTable} join ${profilesTable} on ${profilesTable}.id = ${timesharesTable}.owner where  owner='${owner}'  ;`).all();
+
+   return results;
+}
+catch(error:any)
+{
+    return []
+}
+}
+
+export const queryMyTimeShare = async(owner:string,chain:number,timeshareId:number)=>{
+    try{
+    const { results } = await db.prepare(`SELECT ${timesharesTable}.*,${profilesTable}.photo as ownerphoto FROM ${timesharesTable} join ${profilesTable} on ${profilesTable}.id = ${timesharesTable}.owner where  owner='${owner}' and ${timesharesTable}.id=${timeshareId} and chain='${chain}' ;`).all();
 
    return results;
 }
@@ -183,7 +195,7 @@ catch(error:any)
 
 
 export const alterTable = async() =>{
-    const { meta: insert } = await db
+   /* const { meta: insert } = await db
     .prepare(`Alter table ${listingsTable} ADD COLUMN chain text;`)
     .run();
      await db
@@ -199,6 +211,17 @@ export const alterTable = async() =>{
     await db
     .prepare(`Alter table ${ownedtimesharesTable} ADD COLUMN chain text;`)
     .run();
+*/
+
+const { meta: insert } = await db
+.prepare(`create table mytimeshares_314159 (id integer not null , chain text not null, name text not null, shares integer not null, price integer not null, country text not null, state text not null, city text not null, description text not null, photo text not null, owner text not null);`)
+.run();
+ /*await db
+.prepare(`Alter table ${timesharesTable} ADD COLUMN id integer;`)
+.run();*/
+
+
+
 
 
     }

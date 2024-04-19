@@ -7,24 +7,87 @@ import chains from '@/chains/chains';
 import Link from 'next/link'
 import { useState,useEffect } from 'react';
 import { Country, State, City }  from 'country-state-city';
+import { timeShareTokenAddress,timeShareTokenABI,usdcTokenABI,usdcTokenAddress } from '@/contracts';
+import { useAccountAbstraction } from "../../context/accountContext";
+import Notification from '@/components/Notification/Notification';
+import { queryAttestation ,decodeAttestation} from '@/ethsign/ethsign';
 
+import { uploadToLightHouse } from '@/lighthouse/lighthouse';
+import { ethers } from 'ethers';
+import { alterTable, insertTimeshare } from '../../../tableland/tableland';
 export default function CreateTimeShare() {
  const [isSaving,setIsSaving] = useState()
  const [preview,setPreview] = useState()
  const [selectedFile, setSelectedFile] = useState()
- const [country,setCountry] = useState([])
+ const [country,setCountry] = useState()
+ const [target,setTarget] = useState()
  const [countries,setCountries] = useState([])
-
- const [state,setState] = useState([])
+ const [gotVerified,setGotVerified] = useState()
+ const [profile,setProfile] = useState()
+ const [state,setState] = useState()
  const [states,setStates] = useState([])
- const [city,setCity] = useState([])
+ const [city,setCity] = useState()
  const [cities,setCities] = useState([])
+// NOTIFICATIONS functions
+const [notificationTitle, setNotificationTitle] = useState();
+const [notificationDescription, setNotificationDescription] = useState();
+const [dialogType, setDialogType] = useState(1);
+const [show, setShow] = useState(false);
+const close = async () => {
+setShow(false);
+};
+
+ const {
+  ownerAddress,
+  safes,
+  chainId,
+  privateKey,
+  isAuthenticated,
+  web3Provider,
+  loginWeb3Auth,
+  logoutWeb3Auth,
+  setChainId,
+
+  // ...other context values and functions you need
+} = useAccountAbstraction();
+
 
  useEffect(()=>{
   setCountries(Country.getAllCountries())
   console.log(City.getCitiesOfCountry("TT"))
+  loginWeb3Auth()
 
  },[])
+
+
+ useEffect(()=>{
+  async function getAttestation(){
+     const at = await queryAttestation(ownerAddress)
+     console.log(privateKey)
+     console.log(at)
+     if(at.rows.length ==0)
+     {
+      setNotificationTitle("Verify Profile")
+      setNotificationDescription("Your address is not verified. You cannot create TimeShares")
+      setDialogType(2) //Error
+      setShow(true)
+      return
+     }
+     else
+     {
+       setGotVerified(true)
+       const att = decodeAttestation(at.rows[0])
+       console.log(att)
+       setProfile(att)
+       
+     }
+
+  }
+
+  if(ownerAddress)
+    getAttestation()
+ },[ownerAddress])
+
  // create a preview as a side effect, whenever selected file is changed
  useEffect(() => {
   if (!selectedFile) {
@@ -46,9 +109,92 @@ export default function CreateTimeShare() {
 
   // I've kept this example simple by using the first image instead of multiple
   setSelectedFile(e.target.files[0])
+  setTarget(e.target.files)
+
 }
- const createTimeShare = async()=>
- {}
+ const createTimeShare = async(event)=>
+ {
+    event.preventDefault()
+    if(profile?.Country != country && profile?.State != state && profile?.City != city)
+    {
+      console.log(profile)
+      setDialogType(2) //Error
+      setNotificationTitle("Create TimeShare")
+      setNotificationDescription("You do not have rights to create timeshares for this location")
+      setShow(true)   
+      return
+  
+    }
+    setIsSaving(true)
+    
+    setDialogType(3) //Info
+       setNotificationTitle("Create TimeShare")
+    setNotificationDescription("Creating TimeShare")
+    setShow(true)   
+    const name = document.getElementById("name")?.value
+    const shares = document.getElementById("shares").value
+    const price = document.getElementById("price").value 
+    const description = document.getElementById("description").value
+    const upload = await uploadToLightHouse(target)
+    const photo = `https://gateway.lighthouse.storage/ipfs/${upload.data.Hash}`
+    const _signer = web3Provider?.getSigner()
+    const timeShareContract = new ethers.Contract(
+      timeShareTokenAddress.get(chainId),
+      timeShareTokenABI,
+      _signer
+    );
+      console.log(shares)
+      console.log(name)
+      console.log(chainId)
+      console.log(timeShareTokenAddress.get(chainId))
+      console.log(ownerAddress)
+    try {
+
+      let tx1 = await timeShareContract.callStatic.fractionalise( name,"TS",18,shares,ownerAddress,ownerAddress)
+      let transaction = await timeShareContract.fractionalise( name,"TS",18,shares,ownerAddress,ownerAddress)
+      await transaction.wait();
+      // Wait for the event promise to be resolved
+      // Access the transaction receipt for more information
+    const receipt = await _signer.provider.getTransactionReceipt(transaction.hash);
+   
+    // Access event data from the receipt (replace 'YourEventName' with your actual event name)
+    console.log(receipt)
+    const iface = new ethers.utils.Interface(timeShareTokenABI);
+    console.log(iface)
+
+    const events = iface.parseLog(receipt.logs[2]);
+   console.log(events)
+   const timeshareId = events.args[0].toNumber();
+   await insertTimeshare(timeshareId,name,photo,description,country,state,city,chainId.toString(),parseInt(shares),parseFloat(price),ownerAddress)
+
+       console.log(events.args); // Access event arguments
+    setDialogType(1) //Success
+    setNotificationTitle("Create TimeShare")
+    setNotificationDescription("TimeShare Successfully Created")
+    setShow(true)   
+
+    }catch(error)
+    {
+      if (error.code === "TRANSACTION_REVERTED") {
+        console.log("Transaction reverted");
+        // let revertReason = ethers.utils.parseRevertReason(error.data);
+        setNotificationDescription("Reverted");
+      } else if (error.code === "ACTION_REJECTED") {
+        setNotificationDescription("Transaction rejected by user");
+      } else {
+        console.log(error);
+        //const errorMessage = ethers.utils.revert(error.reason);
+        setNotificationDescription(
+          `Transaction failed with error: ${error.reason}`
+        );
+      }
+      setDialogType(2); //Error
+      setNotificationTitle("Create TimeShare");
+      setIsSaving(false)
+      setShow(true);
+
+    }
+  }
 
 
  const countryChanged = (event:any)=>{
@@ -63,7 +209,12 @@ export default function CreateTimeShare() {
   console.log(event.target.value)
   console.log(_cities)
    setCities(_cities)
+   setState(event.target.value)
  }   
+
+ const cityChanged = (event:any)=>{
+    setCity(event.target.value)
+ }
   return (
     <>
       <Head>
@@ -256,7 +407,7 @@ export default function CreateTimeShare() {
                         <select 
         id="cities"
         className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
- 
+        onChange={cityChanged}
       >
         <option value="">City</option>
         {cities.map((_city,index) => (
@@ -280,7 +431,7 @@ export default function CreateTimeShare() {
                       rows="10"
                       name="description"
                       id="description"
-                      placeholder="Type event description"
+                      placeholder="Type timeshare description"
                       className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
                     ></textarea>
                   </div>
@@ -296,6 +447,13 @@ export default function CreateTimeShare() {
 
       
     </section>
+    <Notification
+        type={dialogType}
+        show={show}
+        close={close}
+        title={notificationTitle}
+        description={notificationDescription}
+      />
     <Footer />
      </main>
      </>
