@@ -17,9 +17,9 @@ const signer = wallet.connect(provider);
 
 const db = new Database({signer})  
 
-export const insertBooking =async (owner:string,week:number,year:number,timeShareId:number,chain:number) => {
+export const insertBooking =async (id:string,owner:string,week:number,year:number,timeShareId:number,chain:number) => {
     // Insert a row into the table
- const id = `${timeShareId}_${chain}_${year}_${week}`   
+ //const id = `${timeShareId}_${chain}_${year}_${week}`   
 const { meta: insert } = await db
 .prepare(`INSERT INTO ${bookingsTable} (id, owner,week,year,timeShareId,chain) VALUES ( ?,?,?,?,?,?);`)
 .bind(id,owner,week,year,timeShareId,chain.toString())
@@ -70,7 +70,7 @@ if( listing.length <= 0)
 {
 const { meta: insert } = await db
 .prepare(`INSERT INTO ${listingsTable} (id,timeshareid,shares,available,owner,datelisted,chain) VALUES ( ?,?,?,?,?,?,?);`)
-.bind(id,timeshareId,shares,shares,owner,datelisted)
+.bind(id,timeshareId,shares,shares,owner,datelisted,chain)
 .run();
 }else
 {
@@ -92,7 +92,7 @@ if( owned.length <= 0)
 {
 const { meta: insert } = await db
 .prepare(`INSERT INTO ${ownedtimesharesTable} (id,timeshareId,shares,owner,chain) VALUES ( ?,?,?,?,?);`)
-.bind(id,timeshareId,shares,shares,owner)
+.bind(id,timeshareId,shares,owner,chain)
 .run();
 }else
 {
@@ -117,6 +117,18 @@ catch(error:any)
 }
 }
 
+export const queryTimeShares = async()=>{
+    try{
+    const { results } = await db.prepare(`SELECT ${timesharesTable}.*,${profilesTable}.name as ownername,${profilesTable}.photo as ownerphoto,${listingsTable}.shares as lshares,${listingsTable}.available,${listingsTable}.id as lid FROM ${timesharesTable} join ${profilesTable} on ${profilesTable}.id = ${timesharesTable}.owner join ${listingsTable} on ${listingsTable}.timeshareid = ${timesharesTable}.id and ${listingsTable}.chain = ${timesharesTable}.chain   ;`).all();
+
+   return results;
+}
+catch(error:any)
+{
+    return []
+}
+}
+
 
 export const queryOwnedTimeShares = async(timeShareId:number,chain:string,owner:string)=>{
     try{
@@ -130,6 +142,18 @@ catch(error:any)
 }
 }
 
+
+export const queryTimeShare = async(id:number,chain:string)=>{
+    try{
+    const { results } = await db.prepare(`SELECT ${timesharesTable}.*,${profilesTable}.photo as ownerphoto FROM ${timesharesTable} join ${profilesTable} on ${profilesTable}.id = ${timesharesTable}.owner where  ${timesharesTable}.id=${id} and ${timesharesTable}.chain='${chain}'  ;`).all();
+
+   return results;
+}
+catch(error:any)
+{
+    return []
+}
+}
 
 export const queryMyTimeShares = async(owner:string)=>{
     try{
@@ -167,6 +191,22 @@ catch(error:any)
     return []
 }
 }
+
+
+export const queryMyOwnedTimeShares = async(owner:string)=>{
+    try{
+    const { results } = await db.prepare(`SELECT ${timesharesTable}.*,${profilesTable}.photo as ownerphoto,${profilesTable}.name as ownername,${ownedtimesharesTable}.shares as oshares FROM ${timesharesTable} join ${profilesTable} on ${profilesTable}.id = ${timesharesTable}.owner join ${ownedtimesharesTable} on ${ownedtimesharesTable}.timeshareId = ${timesharesTable}.id and ${ownedtimesharesTable}.chain = ${timesharesTable}.chain where  ${ownedtimesharesTable}.owner='${owner}'  ;`).all();
+
+   return results;
+}
+catch(error:any)
+{
+    return []
+}
+}
+
+
+
 export const queryProfile = async(id:string)=>{
     try{
     const { results } = await db.prepare(`SELECT * FROM ${profilesTable} where id='${id}';`).all();
@@ -214,6 +254,10 @@ export const alterTable = async() =>{
 */
 
 const { meta: insert } = await db
+.prepare(`update ${ownedtimesharesTable} set chain=0,owner='0x0Cde28f713748D1b98917Bc272a63A28cb0C3f96' where id='6cfe5fc7-1505-4a21-8e3a-47448bf044ad';`)
+.run();
+
+/*const { meta: insert } = await db
 .prepare(`create table mytimeshares_314159 (id integer not null , chain text not null, name text not null, shares integer not null, price integer not null, country text not null, state text not null, city text not null, description text not null, photo text not null, owner text not null);`)
 .run();
  /*await db

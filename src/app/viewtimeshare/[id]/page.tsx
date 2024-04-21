@@ -10,7 +10,7 @@ import { Country, State, City }  from 'country-state-city';
 import { useAccountAbstraction } from "../../../context/accountContext";
 import { queryMyTimeShare } from '../../../../tableland/tableland';
 import Notification from '@/components/Notification/Notification';
-import { timeShareTokenAddress,timeShareTokenABI,usdcTokenABI,usdcTokenAddress } from '@/contracts';
+import { timeShareTokenAddress,timeShareTokenABI,usdcTokenABI,usdcTokenAddress ,tokenABI} from '@/contracts';
 import { ethers } from 'ethers';
 import { insertListing } from '../../../../tableland/tableland';
 
@@ -147,19 +147,20 @@ setShow(false);
         
     try {
       const shares = document.getElementById("sharesToList").value
+      console.log(timeshare)
       const price = ethers.utils.parseEther(timeshare.price.toString())
-      const token = await timeShareContract.getTokenAddress(timeshare.id);
+      const token = await timeShareContract.tokenAddress(timeshare.id);
       console.log(token)
-      alert(token)
       const tokenContract = new ethers.Contract(
         token,
-        usdcTokenABI,
+        tokenABI,
         _signer
       );
       console.log(shares)
-      let tx = await tokenContract.approve( timeShareTokenAddress.get(chainId),ethers.utils.parseEther(shares.toString()))
+      let tx = await tokenContract.erc20Approve( timeShareTokenAddress.get(chainId),shares)
       await tx.wait()   
-      alert("Love")
+      //let tx2 = await tokenContract.setApprovalForAll( timeShareTokenAddress.get(chainId),true)
+      //await tx2.wait()   
       let tx1 = await timeShareContract.callStatic.list( timeshare.id,shares,timeshare.price)
       let transaction = await timeShareContract.list( timeshare.id,shares,price)
       await transaction.wait();
@@ -172,11 +173,11 @@ setShow(false);
     const iface = new ethers.utils.Interface(timeShareTokenABI);
     console.log(iface)
 
-    const events = iface.parseLog(receipt.logs[2]);
+    const events = iface.parseLog(receipt.logs[1]);
    console.log(events)
-   const listingId = events.args[1].toNumber();
+   const listingId = events.args[2].toNumber();
    const datelisted = new Date().getTime()
-   await insertListing(listingId,timeshare.id,shares,shares,ownerAddress,datelisted)
+   await insertListing(listingId,timeshare.id,shares,ownerAddress,datelisted,chainId.toString())
        console.log(events.args); // Access event arguments
     setDialogType(1) //Success
     setNotificationTitle("List TimeShare")

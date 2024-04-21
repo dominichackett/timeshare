@@ -5,15 +5,43 @@ import Footer from '@/components/Footer/Footer'
 import Image from 'next/image';
 import chains from '@/chains/chains';
 import Link from 'next/link'
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-export default function TimeShare() {
-    const [timeshares,setTimeShares] = useState([{id:1,name:"Electric Bike",price:100,shares:10,status:"Available"
-    ,image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[0]}
-    ,{id:2,name:"Electric Bike",price:100,shares:10,status:"Available",image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[1]}
-    ,{id:3,name:"Electric Bike",price:100,shares:10,status:"Available",image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[2]}
-    ,{id:4,name:"Electric Bike",price:100,shares:10,status:"Available",image:"/images/timesharelogo2.png",owner:"Dominic Hackett",chain:chains[3]}])
+import { queryMyOwnedTimeShares,alterTable } from '../../../tableland/tableland';
+import { useAccountAbstraction } from "../../context/accountContext";
+
+export default function PurchasedTimeShare() {
+    const [timeshares,setTimeShares] = useState([])
     const router = useRouter()
+    const {
+      ownerAddress,
+      safes,
+      chainId,
+      privateKey,
+      isAuthenticated,
+      web3Provider,
+      loginWeb3Auth,
+      logoutWeb3Auth,
+      setChainId,
+    
+      // ...other context values and functions you need
+    } = useAccountAbstraction();
+
+    useEffect(()=>{
+  
+      async function getTimeShares()
+      { 
+        //  await alterTable()
+          const _timeshares = await queryMyOwnedTimeShares(ownerAddress)
+          setTimeShares(_timeshares)
+          console.log(_timeshares)
+      }
+   
+      if(ownerAddress)
+        getTimeShares()
+   
+     },[ownerAddress])
+    
     return (
     <>
       <Head>
@@ -48,10 +76,10 @@ export default function TimeShare() {
         <div className="mb-12 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
                 {timeshares.map((timeshare) => (
                   <div key={timeshare.id} className=' bg-bg-color p-4 rounded-lg border border-dashed border-[#A1A0AE]'>
-                  <button  onClick={()=>router.push(`/viewtimeshare/${timeshare.id}`)} className="cursor-pointer group">
+                  <button  onClick={()=>router.push(`/viewtimeshare/${timeshare.id}_${timeshare.chain}`)} className="cursor-pointer group">
                     <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-lg sm:aspect-h-3 sm:aspect-w-2">
                       <img
-                        src={timeshare.image}
+                        src={timeshare.photo}
                         alt={timeshare.name}
                         className="h-[300px]  w-full object-cover object-center group-hover:opacity-75"
                       />
@@ -60,10 +88,10 @@ export default function TimeShare() {
                     <div className="flex items-center mt-4 ">
                       <div className="flex-shrink-0 h-10 w-10">
                         <img crossOrigin  className="cursor-pointer  h-8 w-8 rounded-full" 
-                        src={timeshare.chain.icon} alt="" />
+                        src={chains[timeshare.chain].icon} alt="" />
                       </div>
                       <div className="mt-2 mr-2">
-                      <div  className="mb-4 cursor-pointer text-sm font-medium text-white">{timeshare.chain.label}</div>
+                      <div  className="mb-4 cursor-pointer text-sm font-medium text-white">{chains[timeshare.chain].label}</div>
 
                          </div>
                     </div> 
@@ -71,10 +99,10 @@ export default function TimeShare() {
                     <div className="flex items-center mt-4 ">
                       <div className="flex-shrink-0 h-10 w-10">
                         <img crossOrigin  className="cursor-pointer  h-8 w-8 rounded-full" 
-                        src="/images/timesharelogo2.png" alt="" />
+                        src={timeshare.ownerphoto} alt="" />
                       </div>
                       <div className="mt-2 mr-2">
-                      <div  className="mb-4 cursor-pointer text-sm font-medium text-white">{timeshare.owner}</div>
+                      <div  className="mb-4 cursor-pointer text-sm font-medium text-white">{timeshare.ownername}</div>
 
                          </div>
                     </div> 
@@ -82,26 +110,17 @@ export default function TimeShare() {
                       <h3>{timeshare.name}</h3>
                       <p>${timeshare.price}</p>
                     </div>
-                    <div className="mt-4 flex items-center justify-between text-base font-medium text-white">
-                      <h3>Shares</h3>
-                      <p>{timeshare.shares}</p>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between text-base font-medium text-white">
-                      <h3>Available Shares</h3>
-                      <p>{timeshare.shares}</p>
-                    </div>
+                   
+                    
                     <div className="mt-4 flex items-center justify-between text-base font-medium text-white">
                       <h3>Shares Owned</h3>
-                      <p>{timeshare.shares}</p>
+                      <p>{timeshare.oshares}</p>
                     </div>
-                    <div className="mt-4 flex items-center justify-between text-base font-medium text-white">
-                      <h3>Status</h3>
-                      <p>{timeshare.status}</p>
-                    </div>
+                    
                     <div className="mt-4 flex items-center justify-between text-base font-medium text-white">
                    
                     <Link
-                    href={`/booking/${timeshare.id}`}
+                    href={`/booking/${timeshare.id}_${timeshare.chain}`}
                       className="hover:shadow-form w-full rounded-md bg-primary py-3 px-8 text-center text-base font-semibold text-white outline-none"
                     >
                         Book TimeShare

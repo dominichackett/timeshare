@@ -8,8 +8,10 @@ import Link from 'next/link'
 import { useState,useEffect } from 'react';
 import { Country, State, City }  from 'country-state-city';
 import { useAccountAbstraction } from "../../../context/accountContext";
-import { queryBooking } from '../../../../tableland/tableland';
-export default function ViewTimeShare() {
+import { queryTimeShare,insertBooking } from '../../../../tableland/tableland';
+import { v4 as uuidv4 } from 'uuid';
+import Notification from '@/components/Notification/Notification';
+export default function BookTimeShare({params}) {
  const [isSaving,setIsSaving] = useState()
  const [preview,setPreview] = useState()
  const [selectedFile, setSelectedFile] = useState()
@@ -21,6 +23,18 @@ export default function ViewTimeShare() {
  const [city,setCity] = useState([])
  const [cities,setCities] = useState([])
  const [year] = useState(new Date())
+ const [gotTimeShare,setGotTimeShare] = useState()
+ const [timeshare,setTimeShare] = useState()
+ // NOTIFICATIONS functions
+const [notificationTitle, setNotificationTitle] = useState();
+const [notificationDescription, setNotificationDescription] = useState();
+const [dialogType, setDialogType] = useState(1);
+const [show, setShow] = useState(false);
+const close = async () => {
+setShow(false);
+};
+
+
  const {
   ownerAddress,
   safes,
@@ -59,8 +73,31 @@ export default function ViewTimeShare() {
   // I've kept this example simple by using the first image instead of multiple
   setSelectedFile(e.target.files[0])
 }
- const createTimeShare = async()=>
- {}
+ const bookTimeShare = async(event:any)=>
+ {
+
+      event.preventDefault()
+   try    
+    { 
+      const _id = uuidv4()
+      setDialogType(3)  //Info
+      setNotificationTitle("Book TimeShare")
+      setNotificationDescription("Booking TimeShare")
+      setShow(true)   
+     const week =  document.getElementById("week").value 
+    await insertBooking(_id,ownerAddress,week,year,timeshare.id,chainId)
+    setDialogType(1)  //Success
+    setNotificationTitle("Book TimeShare")
+    setNotificationDescription("TimeShare Successfully booked")
+    setShow(true)
+    }catch(error)
+    {
+      setDialogType(2)  //Error
+      setNotificationTitle("Book TimeShare")
+      setNotificationDescription("Error booking TimeShare")
+      setShow(true)
+    }   
+ }
 
 
  const countryChanged = (event:any)=>{
@@ -77,6 +114,54 @@ export default function ViewTimeShare() {
    setCities(_cities)
  }   
 
+
+ useEffect(()=>{
+  setCountries(Country.getAllCountries())
+  console.log(City.getCitiesOfCountry("TT"))
+  async function getTimeShare(){
+    console.log(params)
+    const id = params.id
+    const underscoreIndex = id.indexOf('_');
+    if (underscoreIndex !== -1 && underscoreIndex > 0 && underscoreIndex < id.length - 1) {
+      // Get the digit before and after underscore
+      const timeshareId = parseInt(id[underscoreIndex - 1]);
+      const chain = parseInt(id[underscoreIndex + 1]);
+      
+      const _timeshare = await queryTimeShare(timeshareId,chain);
+      if(_timeshare.length == 0)
+      {
+        setDialogType(2) //Error
+        setNotificationTitle("Booking TimeShare")
+        setNotificationDescription("TimeShare not found")
+        setShow(true)
+        return
+      }
+      
+      setTimeShare(_timeshare[0])
+      const _states = State.getStatesOfCountry(_timeshare[0].country)
+      const _cities = City.getCitiesOfState(_timeshare[0].country,_timeshare[0].state)
+      setCountry(_timeshare[0].country)     
+      setState(_timeshare[0].state)
+      setCity(_timeshare[0].city)
+      setCities(_cities)
+      setStates(_states)
+      console.log(_timeshare)
+
+    }
+    else
+    {
+    }    
+      
+  }
+
+  if(ownerAddress)
+    getTimeShare()
+
+ },[ownerAddress])
+
+ useEffect(()=>{
+   loginWeb3Auth()
+ },[])
  const getBookings = async(event:any)=>{
     
    alert(event.target.value)
@@ -117,25 +202,17 @@ export default function ViewTimeShare() {
       <div
           className="relative  overflow-hidden rounded-xl bg-bg-color"
         >       
-        <form className="p-8 sm:p-10"  onSubmit={ createTimeShare}>
+        <form className="p-8 sm:p-10"  onSubmit={ bookTimeShare}>
             <div className="-mx-5 flex flex-wrap xl:-mx-8">
               <div className="w-full px-5 lg:w-5/12 xl:px-8">
               <div className="mb-12 lg:mb-0">
                   <div className="mb-8">
-                    <input
-                      disabled={isSaving }
-                      required={!selectedFile ? true: false}
-                      type="file"
-                      name="eventImage"
-                      id="eventImage"
-                      className="sr-only"
-                      onChange={onSelectFile}
-                    />
+                    
                     <label
                       for="eventImage"
                       className="cursor-pointer relative flex h-[480px] min-h-[200px] items-center justify-center rounded-lg border border-dashed border-[#A1A0AE] bg-[#353444] p-12 text-center"
                     >
-                     <img src={preview ? preview: '/images/default-image.jpg'}/>
+                     <img src={timeshare?.photo ? timeshare.photo: '/images/timesharelogo2.png'}/>
                     </label>
                   </div>
 
@@ -228,11 +305,12 @@ export default function ViewTimeShare() {
                           Name
                         </label>
                         <input
-                        disabled={isSaving }
+                        disabled={true }
                           required   
                           type="text"
                           name="name"
                           id="name"
+                          value={timeshare?.name}
                           placeholder="Enter Name"
                           className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
                         />
@@ -248,6 +326,7 @@ export default function ViewTimeShare() {
 
                         <select 
         id="shares"
+        value={timeshare?.shares}
         className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
       >
         {[...Array(51)].map((_, index) => (
@@ -273,6 +352,7 @@ export default function ViewTimeShare() {
                           type="number"
                           name="price"
                           id="price"
+                          value={timeshare?.price}
                           placeholder="Enter Price"
                           className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
                         />
@@ -317,7 +397,7 @@ export default function ViewTimeShare() {
                         <select onChange={countryChanged}
         id="countries"
         className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
- 
+       value={country}
       >
         <option value="">Country</option>
         {countries.map((_country) => (
@@ -338,7 +418,7 @@ export default function ViewTimeShare() {
                         <select onChange={stateChanged}
         id="states"
         className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
- 
+       value={state}
       >
         <option value="">State</option>
         {states.map((_state) => (
@@ -361,7 +441,7 @@ export default function ViewTimeShare() {
                         <select 
         id="cities"
         className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
- 
+        value={city}
       >
         <option value="">City</option>
         {cities.map((_city,index) => (
@@ -385,7 +465,8 @@ export default function ViewTimeShare() {
                       rows="10"
                       name="description"
                       id="description"
-                      placeholder="Type event description"
+                      value={timeshare?.description}
+                      placeholder="Type timeshare description"
                       className="w-full rounded-md border border-stroke bg-[#353444] py-3 px-6 text-base font-medium text-body-color outline-none transition-all focus:bg-[#454457] focus:shadow-input"
                     ></textarea>
                   </div>
@@ -401,6 +482,13 @@ export default function ViewTimeShare() {
 
       
     </section>
+    <Notification
+        type={dialogType}
+        show={show}
+        close={close}
+        title={notificationTitle}
+        description={notificationDescription}
+      />
     <Footer />
      </main>
      </>
